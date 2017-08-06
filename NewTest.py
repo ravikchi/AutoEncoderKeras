@@ -3,6 +3,7 @@ import numpy as np
 
 from keras.layers import Input, Dense, Activation
 from keras.models import Model, Sequential
+from keras import regularizers
 
 from keras.datasets import mnist
 
@@ -17,13 +18,19 @@ print(x_test.shape)
 
 input_img = Input(shape=(784,))
 
+layer1_size = 1024
+layer2_size = 512
+layer3_size = 256
+
+input_size = 784
+
 model = Sequential()
-encoder1 = Dense(128, activation='relu', input_dim=784)
+encoder1 = Dense(layer1_size, activation='relu', activity_regularizer=regularizers.l1(10e-8), input_dim=input_size)
 model.add(encoder1)
-decoder1 = Dense(784, activation='sigmoid')
+decoder1 = Dense(input_size, activation='sigmoid')
 model.add(decoder1)
 
-model.compile(optimizer='adadelta', loss='binary_crossentropy')
+model.compile(optimizer='adam', loss='mse')
 
 model.fit(x_train, x_train, epochs=80,
                 batch_size=256,
@@ -36,15 +43,15 @@ decoder1.trainable = False
 model = Sequential()
 model.add(encoder1)
 
-encoder2 = Dense(64, activation='relu')
+encoder2 = Dense(layer2_size, activation='relu',activity_regularizer=regularizers.l1(10e-8))
 model.add(encoder2)
 
-decoder2 = Dense(128, activation='relu')
+decoder2 = Dense(layer1_size, activation='relu')
 model.add(decoder2)
 
 model.add(decoder1)
 
-model.compile(optimizer='adadelta', loss='binary_crossentropy')
+model.compile(optimizer='adam', loss='mse')
 
 model.fit(x_train, x_train, epochs=80,
                 batch_size=256,
@@ -59,16 +66,16 @@ model = Sequential()
 model.add(encoder1)
 model.add(encoder2)
 
-encoder3 = Dense(32, activation='relu')
+encoder3 = Dense(layer3_size, activation='relu',activity_regularizer=regularizers.l1(10e-8))
 model.add(encoder3)
 
-decoder3 = Dense(64, activation='relu')
+decoder3 = Dense(layer2_size, activation='relu')
 model.add(decoder3)
 
 model.add(decoder2)
 model.add(decoder1)
 
-model.compile(optimizer='adadelta', loss='binary_crossentropy')
+model.compile(optimizer='adam', loss='mse')
 
 model.fit(x_train, x_train, epochs=80,
                 batch_size=256,
