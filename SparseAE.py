@@ -15,7 +15,7 @@ x_train = x_train.reshape((len(x_train), np.prod(x_train.shape[1:])))
 x_test = x_test.reshape((len(x_test), np.prod(x_test.shape[1:])))
 
 
-def getEncoders(layer_sizes, input_dim, input_size):
+def getEncoders(layer_sizes, input_size):
     encoders = []
     decoders = []
 
@@ -29,7 +29,7 @@ def getEncoders(layer_sizes, input_dim, input_size):
             decoder_size = layer_sizes[j]
 
         if i == 0:
-            encoder = Dense(size, activation='relu', activity_regularizer=regularizers.l1(10e-8), input_dim=input_dim)
+            encoder = Dense(size, activation='relu', activity_regularizer=regularizers.l1(10e-8), input_dim=input_size)
         else:
             encoder = Dense(size, activation='relu', activity_regularizer=regularizers.l1(10e-8))
 
@@ -44,6 +44,9 @@ def getEncoders(layer_sizes, input_dim, input_size):
     return encoders, decoders
 
 def train_layer_wise(encoders, decoders):
+    decoders.reverse()
+    local_encoders = []
+    local_decoders  = []
     for i in range(len(encoders)):
         model = Sequential()
         local_encoders = encoders[:i+1]
@@ -63,7 +66,7 @@ def train_layer_wise(encoders, decoders):
             model.add(decoder)
 
         model.compile(optimizer='adam', loss='mse')
-        model.fit(x_train, x_train, epochs=80,
+        model.fit(x_train, x_train, epochs=20,
                 batch_size=256,
                 shuffle=True,
                 validation_data=(x_test, x_test))
@@ -71,10 +74,9 @@ def train_layer_wise(encoders, decoders):
     return model
 
 
-layer_sizes = [1024]
-input_dim = Input(shape=(784,))
+layer_sizes = [1024, 512]
 
-encoders, decoders = getEncoders(layer_sizes, input_dim, 784)
+encoders, decoders = getEncoders(layer_sizes, 784)
 
 model = train_layer_wise(encoders, decoders)
 
