@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from keras.layers import Input, Dense, Activation
-from keras.models import Model, Sequential
+from keras.models import Model, Sequential, load_model
 from keras import regularizers
 
 from keras.datasets import mnist
@@ -82,7 +82,38 @@ model.fit(x_train, x_train, epochs=80,
                 shuffle=True,
                 validation_data=(x_test, x_test))
 
+
 decoded_imgs = model.predict(x_test)
+
+encoder1.trainable = True
+encoder2.trainable = True
+encoder3.trainable = True
+
+decoder1.trainable = True
+decoder2.trainable = True
+decoder3.trainable = True
+
+model = Sequential()
+
+model.add(encoder1)
+model.add(encoder2)
+model.add(encoder3)
+
+encoder4 = Dense(1, activation='relu')
+model.add(encoder4)
+
+model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+
+model.fit(x_train, y_train, epochs=80,
+                batch_size=256,
+                shuffle=True,
+                validation_data=(x_test, y_test))
+
+metrics = model.evaluate(x_test, y_test)
+
+for i in range(len(model.metrics_names)):
+    print(str(model.metrics_names[i]) + ": " + str(metrics[i]))
+
 
 n = 10  # how many digits we will display
 plt.figure(figsize=(20, 4))
@@ -100,4 +131,11 @@ for i in range(n):
     plt.gray()
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
+plt.show()
+
+predictions = model.predict(x_test)
+for i in range(10):
+    print(y_test[i])
+    print(predictions[i])
+
 plt.show()

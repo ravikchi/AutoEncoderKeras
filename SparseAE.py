@@ -13,16 +13,71 @@ x_train = x_train.astype('float32') / 255.
 x_test = x_test.astype('float32') / 255.
 x_train = x_train.reshape((len(x_train), np.prod(x_train.shape[1:])))
 x_test = x_test.reshape((len(x_test), np.prod(x_test.shape[1:])))
-print(x_train.shape)
-print(x_test.shape)
 
-inputs = Input(shape=(784,))
-h = Dense(64, activation='sigmoid')(inputs)
-outputs = Dense(784)(h)
 
-model = Model(input=inputs, output=outputs)
-model.compile(optimizer='adam', loss='mse')
-model.fit(x_train, x_train, batch_size=64, epochs=20, validation_data=(x_test, x_test))
+def getEncoders(layer_sizes, input_dim, input_size):
+    encoders = []
+    decoders = []
+
+    j = len(layer_sizes) -2
+
+    for i in range(len(layer_sizes)):
+        size = layer_sizes[i]
+        if j < 0 :
+            decoder_size = input_size
+        else:
+            decoder_size = layer_sizes[j]
+
+        if i == 0:
+            encoder = Dense(size, activation='relu', activity_regularizer=regularizers.l1(10e-8), input_dim=input_dim)
+        else:
+            encoder = Dense(size, activation='relu', activity_regularizer=regularizers.l1(10e-8))
+
+        decoder = Dense(decoder_size, activation='relu', activity_regularizer=regularizers.l1(10e-8))
+
+        encoders.append(encoder)
+        decoders.append(decoder)
+        j -= 1
+
+
+
+    return encoders, decoders
+
+def train_layer_wise(encoders, decoders):
+    for i in range(len(encoders)):
+        model = Sequential()
+        local_encoders = encoders[:i+1]
+        local_decoders = decoders[:i+1]
+        for k in range(len(encoders)):
+            j = k + 1
+            if k > i:
+                break
+
+            if k < i:
+                encoders[k].trainable = False
+
+            encoder = local_encoders[k]
+            decoder = local_decoders[-j]
+
+            model.add(encoder)
+            model.add(decoder)
+
+        model.compile(optimizer='adam', loss='mse')
+        model.fit(x_train, x_train, epochs=80,
+                batch_size=256,
+                shuffle=True,
+                validation_data=(x_test, x_test))
+
+    return model
+
+
+layer_sizes = [1024]
+input_dim = Input(shape=(784,))
+
+encoders, decoders = getEncoders(layer_sizes, input_dim, 784)
+
+model = train_layer_wise(encoders, decoders)
+
 
 decoded_imgs = model.predict(x_test)
 
