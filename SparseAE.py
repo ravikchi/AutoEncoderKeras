@@ -51,6 +51,7 @@ def train_layer_wise(encoders, decoders):
         model = Sequential()
         local_encoders = encoders[:i+1]
         local_decoders = decoders[:i+1]
+        local_decoders.reverse()
         for k in range(len(encoders)):
             j = k + 1
             if k > i:
@@ -60,13 +61,23 @@ def train_layer_wise(encoders, decoders):
                 encoders[k].trainable = False
 
             encoder = local_encoders[k]
-            decoder = local_decoders[-j]
 
             model.add(encoder)
+
+        for k in range(len(encoders)):
+            j = k + 1
+            if k > i:
+                break
+
+            if k < i:
+                encoders[k].trainable = False
+
+            decoder = local_decoders[k]
+
             model.add(decoder)
 
         model.compile(optimizer='adam', loss='mse')
-        model.fit(x_train, x_train, epochs=20,
+        model.fit(x_train, x_train, epochs=2,
                 batch_size=256,
                 shuffle=True,
                 validation_data=(x_test, x_test))
